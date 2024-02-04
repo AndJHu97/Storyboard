@@ -1,0 +1,74 @@
+html, body {
+    height: 98%;
+}
+
+.left {
+    flex:25%; /* Adjust the width as needed */
+    height: 100%;
+    padding-right: 10px;
+    background-color: #a1e4ff; /* Background color for the button container */
+    overflow: hidden; /* Hide overflow to prevent scrolling */
+}
+
+.right {
+    flex: 75%;
+    overflow: hidden; /* Hide overflow to prevent scrolling */
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.row {
+    padding: 10px;
+    height:100%;
+    display: flex;
+}
+
+/* Create two unequal columns that floats next to each other */
+.column {
+    float: left;
+  }
+
+  #create-cards-row{
+    display: flex;
+    flex-direction: column;
+    height: 50px;
+  }
+
+  #cards-row{
+    align-items: center;
+    justify-content: center; /* Center items horizontally */
+  }
+
+  #highlight-text-button{
+    height: 60px;
+    width: 100px;
+}
+
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 80px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  padding: 12px 16px;
+  display: block;
+  text-decoration: none;
+  color: #000;
+  font-size: 12px;
+  user-select: none; /* Add this line to prevent text selection */
+}
+
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+  
