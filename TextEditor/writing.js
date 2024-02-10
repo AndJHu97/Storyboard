@@ -15,6 +15,26 @@ document.addEventListener('DOMContentLoaded', () => {
         theme: 'snow',
     });
 
+    const saveAsButton = document.getElementById("saveAsDocument");
+    const openDocButton = document.getElementById("openDocument");
+    
+    saveAsButton.addEventListener('click', () =>{
+        ipcRenderer.send("save-as-document", quill.getContents());
+    })
+
+    //open document
+    openDocButton.addEventListener('click', () =>{
+        ipcRenderer.send("open-document",{});
+    })
+
+    window.writingBridge.documentOpened((_, jsonDocData) =>{
+        const jsonData = JSON.parse(jsonDocData);
+        console.log(jsonDocData);
+        const quillText = jsonData.quillText;
+        console.log(quillText);
+        quill.setContents(quillText);
+    });
+
     //CURRENTLY WORKING HERE TO CHECK CHANGE
     let characterCount = 0;
     let firstDetect = true;

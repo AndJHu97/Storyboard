@@ -9,10 +9,18 @@ require('electron-reload')(__dirname);
 const isDev = process.env.NODE_ENV !== 'production';
 const isMac = process.platform === 'darwin';
 
+//the current document 
+let documentLoaded = {
+    quillText: {
+        ops: []
+    },
+    cardInfo: []
+}
 
+let mainWindow;
 
 const createWindow = () => {
-    const win = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: isDev? 1600 : 800,
         height: 600,
         webPreferences:{
@@ -22,19 +30,15 @@ const createWindow = () => {
 
     //open devtools if in dev env
     if(isDev){
-        win.webContents.openDevTools();
+        mainWindow.webContents.openDevTools();
     }
 
 
-    win.loadFile(path.join(__dirname, 'TextEditor', 'writing.html'));
+    mainWindow.loadFile(path.join(__dirname, 'TextEditor', 'writing.html'));
      // Open the window in full screen
-     win.maximize();
+     mainWindow.maximize();
       // Add the following line to retain focus
-    win.show();
-
-    
-      
-
+    mainWindow.show();
 }
 
 
@@ -109,6 +113,58 @@ ipcMain.on('save-card', (event, { cardId, sourceStartIndex, sourceEndIndex, resp
     const data = {sourceStartIndex, sourceEndIndex, responseStartIndex, responseEndIndex, source,response};
    
     fs.writeFileSync(filePath, JSON.stringify(data));  
+});
+
+let openedFilePath;
+//Save As
+ipcMain.on('save-as-document', (_, quillContent) =>{
+    // Show save dialog to choose the file path
+    dialog.showSaveDialog({
+        title: 'Save Document',
+        defaultPath: 'document.json',
+        filters: [{ name: 'JSON Files', extensions: ['json'] }]
+    }).then(({ filePath }) => {
+        // Check if filePath is defined (user clicked save)
+        if (filePath) {
+            // Save the quill content to the chosen file path
+            // Write quillContent to the filePath using fs.writeFile 
+            openedFilePath = filePath;
+            documentLoaded.quillText = quillContent;
+            fs.writeFile(filePath, JSON.stringify(documentLoaded,null,2), 'utf-8', (err) => {
+                if (err) {
+                    console.error('Error saving document:', err);
+                } else {
+                    console.log('Document saved successfully.');
+                }
+            });
+
+        }
+    }).catch(err => {
+        console.error('Error saving document:', err);
+    });
+});
+
+ipcMain.on("open-document",(_,{})=>{
+    dialog.showOpenDialog({
+        properties: ['openFile'], // Allow only selecting files
+        filters: [{ name: 'JSON Files', extensions: ['json'] }] // Allow only JSON files
+    }).then(result => {
+        // Check if the user selected a file
+        if (!result.canceled && result.filePaths.length > 0) {
+            const filePath = result.filePaths[0];
+            fs.readFile(filePath, 'utf-8', (err, data) => {
+                if (err) {
+                    console.error('Error reading file:', err);
+                    // Handle error
+                } else {
+                    // Send the JSON data to renderer process or do something with it
+                    mainWindow.webContents.send('document-opened', data);
+                }
+            });
+        }
+    }).catch(err => {
+        console.error('Error while showing open dialog:', err);
+    });
 });
 
 ipcMain.on('read-card', (event, {cardId}) => {
