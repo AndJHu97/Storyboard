@@ -64,27 +64,21 @@ app.on('window-all-closed', () =>{
 
 
 
-//Card events below
-ipcMain.on('load-cards', (event,{}) => {
-    const cardsDirectory = path.join(app.getPath('userData'), 'CardFiles');
-    const cardFiles = fs.readdirSync(cardsDirectory);
-
-    event.reply('preload-cards', { cardFiles });
-});
-
 ipcMain.on('save-card', (event, { cardId, sourceStartIndex, sourceEndIndex, responseStartIndex, responseEndIndex, source, response }) => {
-    const filePath = getCardFilePath(cardId);
+    // Find the index of the card in the cardInfo array
+    const indexToUpdate = documentLoaded.cardInfo.findIndex(card => card.id === cardId);
+    
     //update file if already exist
-    if(fs.existsSync(filePath))
+    if(indexToUpdate !== -1)
     {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const currentData = JSON.parse(fileContent);
-        const currentSource = currentData.source;
-        const currentResponse = currentData.response;
-        const currentSourceStartIndex = currentData.sourceStartIndex;
-        const currentSourceEndIndex = currentData.sourceEndIndex;
-        const currentResponseStartIndex = currentData.responseStartIndex;
-        const currentResponseEndIndex = currentData.responseEndIndex;
+       
+        const documentCardInfo = getCardInfoById(cardId);
+        const currentSource = documentCardInfo.source;
+        const currentResponse = documentCardInfo.response;
+        const currentSourceStartIndex = documentCardInfo.sourceStartIndex;
+        const currentSourceEndIndex = documentCardInfo.sourceEndIndex;
+        const currentResponseStartIndex = documentCardInfo.responseStartIndex;
+        const currentResponseEndIndex = documentCardInfo.responseEndIndex;
 
         //If it is updating source
         if(source != null)
@@ -108,12 +102,37 @@ ipcMain.on('save-card', (event, { cardId, sourceStartIndex, sourceEndIndex, resp
             responseEndIndex = currentResponseEndIndex;
             response = currentResponse;
         }
+
+        // Create a new card object with the provided variables
+        const newCard = {
+            sourceStartIndex,
+            sourceEndIndex,
+            responseStartIndex,
+            responseEndIndex,
+            source,
+            response
+        };
+
+        // Push the new card object to the cardInfo array
+        documentLoaded.cardInfo[indexToUpdate] = newCard;
+        return;
     }
     
-    const data = {sourceStartIndex, sourceEndIndex, responseStartIndex, responseEndIndex, source,response};
-   
-    fs.writeFileSync(filePath, JSON.stringify(data));  
+    //if not updating and creating a new card
+    // Create a new card object with the provided variables
+    const newCard = {
+        sourceStartIndex,
+        sourceEndIndex,
+        responseStartIndex,
+        responseEndIndex,
+        source,
+        response
+    };
+
+    // Push the new card object to the cardInfo array
+    documentLoaded.cardInfo.push(newCard);
 });
+
 
 let openedFilePath;
 //Save As
@@ -152,11 +171,16 @@ ipcMain.on("open-document",(_,{})=>{
         // Check if the user selected a file
         if (!result.canceled && result.filePaths.length > 0) {
             const filePath = result.filePaths[0];
+            openedFilePath = filePath;
             fs.readFile(filePath, 'utf-8', (err, data) => {
                 if (err) {
                     console.error('Error reading file:', err);
                     // Handle error
                 } else {
+                    //update docuemntLoaded
+                    const documentData = JSON.parse(data);
+                    documentLoaded.quillText = documentData.quillContent;
+                    documentLoaded.cardInfo = documentData.cardInfo;
                     // Send the JSON data to renderer process or do something with it
                     mainWindow.webContents.send('document-opened', data);
                 }
@@ -183,4 +207,9 @@ function getCardFilePath(cardId) {
 console.log(app.getPath('userData', 'CardFiles'));
 const cardsDirectory = path.join(app.getPath('userData'), 'CardFiles');
 return path.join(cardsDirectory, `card_${cardId}.txt`);
+}
+
+function saveDocumentToFile() {
+    // Write the documentLoaded object to a file
+    fs.writeFileSync(openedFilePath, JSON.stringify(documentLoaded, null, 2));
 }

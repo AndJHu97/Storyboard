@@ -29,10 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.writingBridge.documentOpened((_, jsonDocData) =>{
         const jsonData = JSON.parse(jsonDocData);
-        console.log(jsonDocData);
         const quillText = jsonData.quillText;
-        console.log(quillText);
+        const cardInfos = jsonData.cardInfo;
         quill.setContents(quillText);
+        cardInfos.forEach((cardInfo) =>{
+            let cardId = cardInfo.id;
+            console.log("card id writing bridge: " + cardId);
+            createNewCards(cardId);
+            
+        });
     });
 
     //CURRENTLY WORKING HERE TO CHECK CHANGE
@@ -98,9 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       
 
-    //load the already written cards
-    ipcRenderer.send('load-cards', {
-    });
 
     //get readCards from main
     window.writingBridge.readCards((event, data) => {
@@ -114,17 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Example: Create cards
     const createCards = document.getElementById('create-cards');
     const cardContainer = document.getElementById('cards-row');
-
-    window.writingBridge.preloadCards((event, {cardFiles}) => {
-        cardFiles.forEach((cardFile) =>{
-            const parts = cardFile.split('_');
-            let cardId = parts[1];
-            cardId = cardId.slice(0, -4);
-            console.log("card id writing bridge: " + cardId);
-            createNewCards(cardId);
-            
-        });
-    });
 
     createCards.addEventListener('click', () => {
         // Get all elements with the class name 'dropdown-container' within cardContainer
@@ -209,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   
                   if(selectedOption === 'Response')
                   {
+                      //save to main
                       ipcRenderer.send("save-card", {
                           cardId: getCardId(newButton),
                           sourceStartIndex: null,
@@ -227,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
           });
   
-          //read card file
+          //read card file and display content
           newButton.addEventListener('click', (event) => {
               console.log(getCardId(newButton));
               ipcRenderer.send('read-card', { cardId: getCardId(newButton) });
